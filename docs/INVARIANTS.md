@@ -21,6 +21,14 @@ Guardrails checklist. If any invariant is violated, the system breaks in the spe
 | drag-to-pan uses `add_forced_key_binding` for `mouse_move` and `mbtn_left_up` during active drag | `drag-to-pan.lua` lines 120-123 | Without forced bindings during drag, mouse move events may be consumed by OSC's forced `mouse_move` group. Dragging becomes unreliable — the pan jumps or stops tracking. |
 | Forced drag bindings are removed on termination | `drag-to-pan.lua` lines 126-128 | If forced bindings leak (not removed), they permanently override OSC's `mouse_move` handling. The OSC never sees mouse movement, so it never shows/hides. Mouse cursor auto-hide also breaks. |
 
+## Zoom-Toward-Cursor Requirements
+
+| Invariant | Location | What breaks if changed |
+|---|---|---|
+| Zoom bindings use input.conf `script-binding` (Tier 1), not direct `add video-zoom` | `input.conf` section 4, `zoom-toward-cursor.lua` lines 60-61 | If zoom bindings bypass the script (e.g., `no-osd add video-zoom 0.05`), zoom drifts toward video center instead of the cursor position. If `MBTN_LEFT+WHEEL` combos are moved to Tier 2 script-level bindings, combo detection breaks — same root cause as the drag-to-pan binding tier invariant. |
+| Pan resets to 0 when zoom transitions from positive to <= 0 | `zoom-toward-cursor.lua` lines 23-27 | If pan is not reset on zoom-out past zero, the video stays offset from center at zero zoom. The user sees a shifted frame with no way to correct it (panning has no visual effect at zoom <= 0). |
+| Zoom bindings have `{repeatable = true}` | `zoom-toward-cursor.lua` lines 60-61 | Without `repeatable`, holding `z`/`x` keys or rapid scroll-wheel events only fire once. Continuous zoom-in/out requires lifting and re-pressing the key or re-scrolling. |
+
 ## Inter-Script Message Contracts
 
 | Invariant | Location | What breaks if changed |

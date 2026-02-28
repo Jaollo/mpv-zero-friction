@@ -10,6 +10,7 @@ System index for mpv-zero-friction. The map of what exists and how it connects.
 | `input.conf` | ~60 | Hardware bindings in 8 numbered sections, right-hand optimized |
 | `mpvnet.conf` | ~1 | mpv.net host settings (`process-instance=multi`) |
 | `scripts/drag-to-pan.lua` | ~158 | Mouse1 drag panning when `video-zoom > 0` |
+| `scripts/zoom-toward-cursor.lua` | ~63 | Zoom-toward-cursor: keeps point under mouse fixed during zoom |
 | `scripts/double-right-quit.lua` | ~27 | Double-right-click quit (300ms threshold) |
 | `scripts/mouse-repeat.lua` | ~43 | Side-button key repeat for frame-by-frame scrubbing |
 | `scripts/osc.lua` | ~3000 | Modified stock OSC with ghost mode and color customization |
@@ -157,13 +158,15 @@ The most important interaction in the system. Two paths depending on where the c
 1. User holds mbtn_left (drag starts via Path A or B)
 2. User scrolls wheel while holding mbtn_left
 3. mpv's input layer detects the MBTN_LEFT+WHEEL combo at Tier 1
-4. Combo binding fires: "no-osd add video-zoom 0.05"
-5. Drag and zoom operate simultaneously
+4. Combo binding fires: script-binding zoom-in-cursor (or zoom-out-cursor)
+5. zoom-toward-cursor.lua adjusts zoom + pan to keep cursor-point fixed
+6. Drag and zoom operate simultaneously
 ```
 
-This only works because drag-to-pan uses a Tier 1 input.conf binding for
-`mbtn_left`. If it used a Tier 2 script-level binding, the script would
-consume `mbtn_left` before mpv's input layer could form the combo.
+This only works because both drag-to-pan and zoom-toward-cursor use Tier 1
+input.conf `script-binding` routes (named-only bindings with nil key). If
+drag-to-pan used a Tier 2 script-level binding, the script would consume
+`mbtn_left` before mpv's input layer could form the combo.
 
 ### Why both paths send "up"
 
