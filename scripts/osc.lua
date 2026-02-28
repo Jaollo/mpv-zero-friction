@@ -2922,7 +2922,10 @@ local function idlescreen_visibility(mode, no_osd)
 end
 
 mp.register_script_message("osc-visibility", visibility_mode)
-mp.register_script_message("osc-show", show_osc)
+mp.register_script_message("osc-show", function()
+    state.mouse_in_window = true
+    show_osc()
+end)
 mp.register_script_message("osc-hide", function ()
     if user_opts.visibility == "auto" then
         osc_visible(false)

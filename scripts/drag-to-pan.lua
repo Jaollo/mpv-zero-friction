@@ -32,6 +32,8 @@ local function force_drag_termination()
         end
         drag.active = false
         drag.moved = false
+        -- Refresh OSC state immediately upon drag completion
+        mp.commandv("script-message", "osc-show")
     end
 end
 
@@ -106,6 +108,9 @@ local function drag_to_pan_handler(table)
                             set_prop("video-pan-y", new_pan_y)
                             drag.pan_y = new_pan_y
                         end
+
+                        -- Keep OSC alive and its internal mouse tracking synchronized
+                        mp.commandv("script-message", "osc-show")
                     end
                     drag.moved = false
                 end
