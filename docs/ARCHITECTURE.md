@@ -83,6 +83,7 @@ Tier 1 (lowest)   input.conf
 | `double-right-quit.lua` | `drag-to-pan.lua` | `drag-to-pan-event cancel` | Every right-click down event |
 | `osc.lua` | `drag-to-pan.lua` | `drag-to-pan-event down` | `mbtn_left` down inside bar, no element hit |
 | `osc.lua` | `drag-to-pan.lua` | `drag-to-pan-event up` | Every `mbtn_left` up event |
+| `osc.lua` | `drag-to-pan.lua` | `drag-to-pan-event cancel` | Every `mouse_leave` event |
 
 ## OSC Render Pipeline
 

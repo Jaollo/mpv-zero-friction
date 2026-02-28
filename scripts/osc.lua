@@ -2265,6 +2265,9 @@ local function mouse_leave()
     -- reset mouse position
     state.last_mouseX, state.last_mouseY = nil, nil
     state.mouse_in_window = false
+    -- Cancel any active drag — the OSC's Tier 3 mouse_leave consumes the event
+    -- before drag-to-pan's Tier 2 kill switch can fire
+    mp.commandv("script-message", "drag-to-pan-event", "cancel")
 end
 
 local function handle_touch(_, touchpoints)
@@ -2293,6 +2296,13 @@ end
 local function process_event(source, what)
     local action = string.format("%s%s", source,
         what and ("_" .. what) or "")
+
+    -- If the "input" group fires a button event, the mouse must be in the window.
+    -- Forced bindings (drag-to-pan) can steal mouse_move from the showhide group,
+    -- leaving mouse_in_window stale/false. Fix it here so get_virt_mouse_pos works.
+    if what == "down" or what == "up" or what == "press" then
+        state.mouse_in_window = true
+    end
 
     if what == "down" or what == "press" then
         local hit_any = false
