@@ -18,8 +18,8 @@ local drag = setmetatable({
     active = false,
     moved = false,
     cleanup = nil,
-    last_x = 0,
-    last_y = 0,
+    last_x = nil,
+    last_y = nil,
     pan_x = 0,
     pan_y = 0,
 }, drag_defaults)
@@ -45,15 +45,15 @@ local function drag_to_pan_handler(table)
         -- Ensure any ghost state is annihilated before starting a new drag
         force_drag_termination()
 
-        local initial_x, initial_y = get_mouse_pos()
-        if initial_x == nil or initial_y == nil then return end
-
         local zoom = get_prop("video-zoom", 0)
         if zoom <= 0 then return end
 
         drag.active = true
         drag.moved = false
-        drag.last_x, drag.last_y = initial_x, initial_y
+        -- Mouse pos may be nil at startup; idle loop will pick up the first valid position
+        local initial_x, initial_y = get_mouse_pos()
+        drag.last_x = initial_x
+        drag.last_y = initial_y
 
         -- Cache initial pan values with safe defaults
         drag.pan_x = get_prop("video-pan-x", 0)
@@ -66,9 +66,15 @@ local function drag_to_pan_handler(table)
                     local current_x, current_y = get_mouse_pos()
                     local osd_w, osd_h = get_osd_size()
 
-                    -- Defensive check: If mouse lost or window sized to 0, abort
+                    -- Defensive check: If mouse lost or window sized to 0, skip this tick
                     if not current_x or not osd_w or osd_w <= 0 or osd_h <= 0 then
-                        force_drag_termination()
+                        return
+                    end
+
+                    -- Late anchor: if initial mouse pos was nil, adopt first valid pos
+                    if not drag.last_x then
+                        drag.last_x, drag.last_y = current_x, current_y
+                        drag.moved = false
                         return
                     end
 
@@ -125,7 +131,6 @@ local function drag_to_pan_handler(table)
 end
 
 -- Fail-safe Kill Switches
-mp.add_key_binding("mbtn_right", "drag-cancel-rightclick", force_drag_termination)
 mp.add_key_binding("mouse_leave", "drag-cancel-leave", force_drag_termination)
 
 -- Robust complex binding for native button tracking

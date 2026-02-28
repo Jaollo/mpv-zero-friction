@@ -1556,7 +1556,7 @@ local function bar_layout(direction, slim)
         y = nil,
         an = (direction < 0) and 7 or 1,
         w = nil,
-        h = slim and 25 or 56,
+        h = slim and 25 or (user_opts.ghostmode and 224 or 56),
     }
 
     local padX = 9
