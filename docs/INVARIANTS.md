@@ -52,6 +52,7 @@ Guardrails checklist. If any invariant is violated, the system breaks in the spe
 
 | Invariant | Location | What breaks if changed |
 |---|---|---|
+| "input" group must NOT bind `wheel_up`/`wheel_down` | `osc.lua` line 2815 | If the OSC's forced "input" group captures wheel events (Tier 3), they never reach input.conf's Tier 1 zoom-toward-cursor bindings. The bottom 224px ghost bar becomes a zoom dead zone — scrolling either seeks or does nothing instead of zooming. |
 | "input" group includes `mbtn_left_dbl` → `"ignore"` | `osc.lua` line 2817 | Without this, double-clicking `mbtn_left` triggers mpv's default fullscreen toggle. This conflicts with drag-to-pan (a fast click-release-click looks like a double-click to mpv). |
 | "input" group is always enabled | `osc.lua` line 2821 | If disabled, the OSC loses all mouse input. No seeking, no buttons, no drag-to-pan forwarding inside the bar area. |
 | "showhide" groups use `"allow-vo-dragging+allow-hide-cursor"` flags | `osc.lua` line 2380 | Without these flags, the forced `mouse_move` binding blocks mpv's cursor auto-hide. The cursor would stay visible permanently. |

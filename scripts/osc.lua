@@ -2812,8 +2812,8 @@ mp.set_key_bindings({
     -- alias shift+mbtn_left to mbtn_mid for touchpads
     {"shift+mbtn_left",     function() process_event("mbtn_mid", "up") end,
                             function() process_event("mbtn_mid", "down")  end},
-    {"wheel_up",            function() process_event("wheel_up", "press") end},
-    {"wheel_down",          function() process_event("wheel_down", "press") end},
+    -- wheel_up/wheel_down removed: pass through to input.conf zoom-toward-cursor
+    -- (Tier 3 capture was stealing wheel events from Tier 1 zoom bindings)
     {"mbtn_left_dbl",       "ignore"},
     {"shift+mbtn_left_dbl", "ignore"},
     {"mbtn_right_dbl",      "ignore"},
