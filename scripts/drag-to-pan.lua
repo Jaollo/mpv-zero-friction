@@ -69,7 +69,7 @@ local function drag_to_pan_handler(table)
                 
                 -- Optimization: Only proceed if there is actual motion
                 if dx ~= 0 or dy ~= 0 then
-                    drag.last_x, drag_state.last_y = current_x, current_y
+                    drag.last_x, drag.last_y = current_x, current_y
                     
                     -- Re-query zoom inside the loop in case it changed (e.g., via script)
                     local current_zoom = mp.get_property_number("video-zoom", 0)
