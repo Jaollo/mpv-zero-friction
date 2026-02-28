@@ -30,4 +30,4 @@ scripts/*.lua                  → scripts/
 | `scripts/mouse-repeat.lua` | Side button key repeat simulation |
 | `scripts/osc.lua` | Modified OSC with ghost mode and color customization |
 
-See [docs/](docs/) for architecture, Lua patterns, and system invariants. See [CLAUDE.md](CLAUDE.md) for AI agent conventions.
+See [CLAUDE.md](CLAUDE.md) for architecture, Lua patterns, binding priority, and system invariants.
