@@ -50,6 +50,7 @@ local user_opts = {
     windowcontrols = "auto",    -- whether to show window controls
     windowcontrols_alignment = "right", -- which side to show window controls on
     windowcontrols_title = "${media-title}", -- same as title but for windowcontrols
+    ghostmode = false,          -- ghost mode: input areas stay active but nothing is rendered
     greenandgrumpy = false,     -- disable santa hat
     livemarkers = true,         -- update seekbar chapter markers on duration change
     chapter_fmt = "Chapter: %s", -- chapter print format for seekbar-hover. "no" to disable
@@ -2480,17 +2481,19 @@ local function render()
     --mouse input area
     local mouse_over_osc = false
 
+    local input_active = state.osc_visible or user_opts.ghostmode
+
     for _,cords in ipairs(osc_param.areas["input"]) do
-        if state.osc_visible then -- activate only when OSC is actually visible
+        if input_active then -- activate when OSC is visible or ghost mode is on
             set_virt_mouse_area(cords.x1, cords.y1, cords.x2, cords.y2, "input")
         end
-        if state.osc_visible ~= state.input_enabled then
-            if state.osc_visible then
+        if input_active ~= state.input_enabled then
+            if input_active then
                 mp.enable_key_bindings("input")
             else
                 mp.disable_key_bindings("input")
             end
-            state.input_enabled = state.osc_visible
+            state.input_enabled = input_active
         end
 
         if mouse_hit_coords(cords.x1, cords.y1, cords.x2, cords.y2) then
@@ -2500,16 +2503,16 @@ local function render()
 
     if osc_param.areas["window-controls"] then
         for _,cords in ipairs(osc_param.areas["window-controls"]) do
-            if state.osc_visible then -- activate only when OSC is actually visible
+            if input_active then -- activate when OSC is visible or ghost mode is on
                 set_virt_mouse_area(cords.x1, cords.y1, cords.x2, cords.y2, "window-controls")
             end
-            if state.osc_visible ~= state.windowcontrols_buttons then
-                if state.osc_visible then
+            if input_active ~= state.windowcontrols_buttons then
+                if input_active then
                     mp.enable_key_bindings("window-controls")
                 else
                     mp.disable_key_bindings("window-controls")
                 end
-                state.windowcontrols_buttons = state.osc_visible
+                state.windowcontrols_buttons = input_active
             end
 
             -- Dead-click fallthrough for the invisible top bar control region
@@ -2528,16 +2531,16 @@ local function render()
 
     if osc_param.areas["window-controls-title"] then
         for _,cords in ipairs(osc_param.areas["window-controls-title"]) do
-            if state.osc_visible then -- activate only when OSC is actually visible
+            if input_active then -- activate when OSC is visible or ghost mode is on
                 set_virt_mouse_area(cords.x1, cords.y1, cords.x2, cords.y2, "window-controls-title")
             end
-            if state.osc_visible ~= state.windowcontrols_title then
-                if state.osc_visible then
+            if input_active ~= state.windowcontrols_title then
+                if input_active then
                     mp.enable_key_bindings("window-controls-title", "allow-vo-dragging")
                 else
                     mp.disable_key_bindings("window-controls-title")
                 end
-                state.windowcontrols_title = state.osc_visible
+                state.windowcontrols_title = input_active
             end
 
             if mouse_hit_coords(cords.x1, cords.y1, cords.x2, cords.y2) then
@@ -2574,8 +2577,8 @@ local function render()
     -- actual rendering
     local ass = assdraw.ass_new()
 
-    -- actual OSC
-    if state.osc_visible then
+    -- actual OSC (ghost mode: input active but nothing drawn)
+    if state.osc_visible and not user_opts.ghostmode then
         render_elements(ass)
     end
 
@@ -2609,23 +2612,23 @@ tick = function()
                                                                                             icon_y)
 
         local ass = assdraw.ass_new()
-        -- mpv logo
-        if user_opts.idlescreen then
+        -- mpv logo (suppressed in ghost mode)
+        if user_opts.idlescreen and not user_opts.ghostmode then
             for _, line in ipairs(logo_lines) do
                 ass:new_event()
                 ass:append(line_prefix .. line)
             end
         end
 
-        -- Santa hat
-        if is_december and user_opts.idlescreen and not user_opts.greenandgrumpy then
+        -- Santa hat (suppressed in ghost mode)
+        if is_december and user_opts.idlescreen and not user_opts.ghostmode and not user_opts.greenandgrumpy then
             for _, line in ipairs(santa_hat_lines) do
                 ass:new_event()
                 ass:append(line_prefix .. line)
             end
         end
 
-        if user_opts.idlescreen then
+        if user_opts.idlescreen and not user_opts.ghostmode then
             ass:new_event()
             ass:pos(display_w / 2, icon_y + 65)
             ass:an(8)
@@ -2848,6 +2851,11 @@ local function visibility_mode(mode, no_osd)
         end
     end
 
+    -- Ghost mode: force "always" so input stays active, rendering is suppressed elsewhere
+    if user_opts.ghostmode and mode ~= "never" then
+        mode = "always"
+    end
+
     if mode == "auto" then
         always_on(false)
         enable_osc(true)
@@ -2864,7 +2872,7 @@ local function visibility_mode(mode, no_osd)
     user_opts.visibility = mode
     mp.set_property_native("user-data/osc/visibility", mode)
 
-    if not no_osd and tonumber(mp.get_property("osd-level")) >= 1 then
+    if not no_osd and not user_opts.ghostmode and tonumber(mp.get_property("osd-level")) >= 1 then
         mp.osd_message("OSC visibility: " .. mode)
     end
 
@@ -2896,7 +2904,7 @@ local function idlescreen_visibility(mode, no_osd)
 
     mp.set_property_native("user-data/osc/idlescreen", user_opts.idlescreen)
 
-    if not no_osd and tonumber(mp.get_property("osd-level")) >= 1 then
+    if not no_osd and not user_opts.ghostmode and tonumber(mp.get_property("osd-level")) >= 1 then
         mp.osd_message("OSC logo visibility: " .. tostring(mode))
     end
 
