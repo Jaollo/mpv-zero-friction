@@ -133,7 +133,9 @@ end
 -- Fail-safe Kill Switches
 mp.add_key_binding("mouse_leave", "drag-cancel-leave", force_drag_termination)
 
--- Robust complex binding for native button tracking
+-- Named-only binding (nil key) so input.conf routes MBTN_LEFT here via script-binding.
+-- Tier 1 preserves MBTN_LEFT+WHEEL combo handling for zoom-while-dragging.
+-- OSC's Tier 3 forced group still overrides inside the bar area.
 mp.add_key_binding(nil, "drag-to-pan", drag_to_pan_handler, {complex=true})
 
 -- Support for external triggers
