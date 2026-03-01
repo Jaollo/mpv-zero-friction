@@ -1,6 +1,6 @@
 # Zero-Friction v0.6
 
-Config and Lua scripts for [mpv](https://mpv.io/) that turn a 5-button mouse into a one-handed video workstation. Drag to pan, scroll to zoom, click to seek — no menus, no toolbar, no second hand needed.
+Drag to pan, scroll to zoom, click to seek — no menus, no toolbar, no second hand needed.
 
 ## Install
 
