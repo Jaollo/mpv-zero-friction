@@ -1,0 +1,14 @@
+# mpv.net binaries and runtime
+*.dll
+*.pdb
+*.exe
+*.com
+*.dat
+*.deps.json
+*.dll.config
+*.runtimeconfig.json
+Locale/
+
+# Claude Code
+.claude/
+CLAUDE.md

@@ -12,8 +12,9 @@ local set_prop      = mp.set_property_number
 local min, max = math.min, math.max
 local function clamp(v, lo, hi) return min(max(v, lo), hi) end
 
-local STEP = 0.05
-local PAN_LIMIT = 3
+local STEP = 0.1
+local PAN_LIMIT = 1.5
+local PAN_EPSILON = 0.0001  -- skip writes below this delta (debounce at boundaries)
 
 local function zoom_step(direction)
     local old_zoom = get_prop("video-zoom", 0)
@@ -51,9 +52,17 @@ local function zoom_step(direction)
     local old_pan_x = get_prop("video-pan-x", 0)
     local old_pan_y = get_prop("video-pan-y", 0)
 
+    local new_pan_x = clamp(old_pan_x + nx * scale_diff, -PAN_LIMIT, PAN_LIMIT)
+    local new_pan_y = clamp(old_pan_y + ny * scale_diff, -PAN_LIMIT, PAN_LIMIT)
+
     set_prop("video-zoom", new_zoom)
-    set_prop("video-pan-x", clamp(old_pan_x + nx * scale_diff, -PAN_LIMIT, PAN_LIMIT))
-    set_prop("video-pan-y", clamp(old_pan_y + ny * scale_diff, -PAN_LIMIT, PAN_LIMIT))
+    -- Skip redundant pan writes at boundaries — prevents event flood to OSC
+    if new_pan_x - old_pan_x > PAN_EPSILON or old_pan_x - new_pan_x > PAN_EPSILON then
+        set_prop("video-pan-x", new_pan_x)
+    end
+    if new_pan_y - old_pan_y > PAN_EPSILON or old_pan_y - new_pan_y > PAN_EPSILON then
+        set_prop("video-pan-y", new_pan_y)
+    end
 end
 
 -- Named-only bindings (nil key) — input.conf routes keys here via script-binding.
