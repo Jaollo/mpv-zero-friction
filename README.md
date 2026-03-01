@@ -1,6 +1,6 @@
-# mpv.net Zero-Friction v0.6
+# Zero-Friction v0.6
 
-Custom mpv.net config and Lua scripts for a one-handed video workstation on Windows. Built around a 5-button mouse — every binding exists because the default required two hands, a menu, or too many clicks.
+Config and Lua scripts for [mpv](https://mpv.io/) that turn a 5-button mouse into a one-handed video workstation. Drag to pan, scroll to zoom, click to seek — no menus, no toolbar, no second hand needed.
 
 ## Install
 
