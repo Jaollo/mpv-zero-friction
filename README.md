@@ -1,8 +1,6 @@
 # mpv.net Zero-Friction v0.6
 
-A zero-friction video workstation config for [mpv.net](https://github.com/mpvnet-player/mpv.net) on Windows. Designed for one-handed right-side operation with a 5-button mouse.
-
-Every binding exists because the default required two hands, a menu, or too many clicks. The goal is: eyes on the video, one hand on the mouse, everything within reach.
+Custom mpv.net config and Lua scripts for a one-handed video workstation on Windows. Built around a 5-button mouse — every binding exists because the default required two hands, a menu, or too many clicks.
 
 ## Install
 
@@ -16,42 +14,6 @@ scripts/*.lua                      → scripts/
 Restart mpv.net after any change.
 
 ## Bindings
-
-```mermaid
-mindmap
-  root((Zero-Friction))
-    Zoom
-      Scroll wheel
-      Z / X keys
-      Drag while scrolling
-      Shift+← Reset
-    Pan
-      Mouse1 drag when zoomed
-    Frame Step
-      ← → arrows
-      Mouse4 / Mouse5 repeat
-    Seek
-      , . ±2 seconds
-    Speed
-      ↑ ↓ ±0.05x
-    Audio
-      Mouse2 mute
-      p mute
-    Pause
-      Mouse3 single click
-      RCtrl / −
-    Quit
-      Mouse3 double click
-      ESC
-      Top-right corner click
-    Loop
-      m AB-loop
-      M file-loop
-    Crop
-      ' toggle 9:16
-```
-
-### Why these specific bindings
 
 **Mouse1 = drag-to-pan.** When zoomed into a video, you need to move around. Drag is the only natural gesture for this — anything else breaks flow. When not zoomed, the click falls through to mpv defaults.
 
