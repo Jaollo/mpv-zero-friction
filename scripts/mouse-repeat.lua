@@ -15,9 +15,9 @@ local function handle_back(table)
     if table.event == "down" then
         mp.command("frame-back-step")
         if timer_back then timer_back:kill() end
-        -- 200ms initial delay, then 50ms interval for smooth continuous stepping
+        -- 200ms initial delay, then 120ms interval (frame-back-step needs time to decode)
         timer_back = mp.add_timeout(0.2, function()
-            timer_back = mp.add_periodic_timer(0.05, repeat_back)
+            timer_back = mp.add_periodic_timer(0.12, repeat_back)
         end)
     elseif table.event == "up" then
         if timer_back then timer_back:kill() end

@@ -48,7 +48,10 @@ local function drag_to_pan_handler(table)
         force_drag_termination()
 
         local zoom = get_prop("video-zoom", 0)
-        if zoom <= 0 then return end
+        if zoom <= 0 then
+            mp.command("begin-vo-dragging")
+            return
+        end
 
         drag.active = true
         drag.moved = false
