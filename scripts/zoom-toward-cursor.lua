@@ -13,25 +13,32 @@ local min, max = math.min, math.max
 local function clamp(v, lo, hi) return min(max(v, lo), hi) end
 
 local STEP = 0.1
+local MAX_ZOOM = 3.0       -- 2^3 = 8x maximum zoom
 local PAN_LIMIT = 1.5
 local PAN_EPSILON = 0.0001  -- skip writes below this delta (debounce at boundaries)
+
+local function zoom_reset()
+    set_prop("video-zoom", 0)
+    set_prop("video-pan-x", 0)
+    set_prop("video-pan-y", 0)
+    mp.osd_message("Zoom: 100%", 1)
+end
 
 local function zoom_step(direction)
     local old_zoom = get_prop("video-zoom", 0)
     local new_zoom = old_zoom + direction * STEP
 
-    -- Edge case: zoom transitions to <= 0 — center the video
-    if new_zoom <= 0 and old_zoom > 0 then
-        set_prop("video-zoom", new_zoom)
-        set_prop("video-pan-x", 0)
-        set_prop("video-pan-y", 0)
+    -- When zooming out to <= 0, clamp to 0 and center video
+    if new_zoom <= 0 then
+        if old_zoom > 0 then
+            zoom_reset()
+        end
         return
     end
 
-    -- Edge case: already at or below zero — just adjust zoom, no pan math
-    if old_zoom <= 0 then
-        set_prop("video-zoom", new_zoom)
-        return
+    if new_zoom > MAX_ZOOM then
+        new_zoom = MAX_ZOOM
+        if old_zoom >= MAX_ZOOM then return end
     end
 
     local mx, my = get_mouse_pos()
@@ -43,7 +50,7 @@ local function zoom_step(direction)
         return
     end
 
-    -- Ch 11.1: Normalized cursor offset from screen center
+    -- Ch 11.1: Normalized cursor offset from screen center (-0.5 to +0.5)
     local nx = (mx - osd_w / 2) / osd_w
     local ny = (my - osd_h / 2) / osd_h
 
@@ -66,8 +73,9 @@ local function zoom_step(direction)
 end
 
 -- Named-only bindings (nil key) — input.conf routes keys here via script-binding.
--- Tier 1 preserves MBTN_LEFT+WHEEL combo detection for zoom-while-dragging.
 mp.add_key_binding(nil, "zoom-in-cursor", function() zoom_step(1) end, {repeatable = true})
 mp.add_key_binding(nil, "zoom-out-cursor", function() zoom_step(-1) end, {repeatable = true})
+mp.add_key_binding(nil, "zoom-reset", zoom_reset)
 
 end -- do block
+

@@ -1,4 +1,4 @@
-# Zero-Friction v0.7
+# Zero-Friction v0.8
 
 Drag to move, scroll to volume, click to seek — no menus, no toolbar, no second hand needed.
 
@@ -20,6 +20,8 @@ scripts/*.lua                      → scripts/
 | Mouse3 | Pause / double-click quit |
 | Mouse4 / Mouse5 | Frame step (hold to repeat) |
 | Scroll wheel | Volume ±2 |
+| Ctrl + Scroll wheel | Zoom toward cursor |
+| Ctrl + Mouse3 / Ctrl+0 / Ctrl+BS | Reset zoom |
 | Top-right corner | Quit (invisible 90px zone) |
 | ← → | Frame step |
 | , . | Seek ±2s |
