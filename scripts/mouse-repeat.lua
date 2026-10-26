@@ -20,7 +20,7 @@ local function repeat_back()
 end
 
 local function repeat_forward()
-    mp_command("frame-step")
+    mp_command("frame-step 1 mute")
 end
 
 local function handle_back(t)
@@ -46,7 +46,7 @@ local function handle_forward(t)
     local event = (type(t) == "table" and t.event) or "press"
 
     if event == "down" or event == "press" then
-        mp_command("frame-step")
+        mp_command("frame-step 1 mute")
         if timer_forward then timer_forward:kill() end
         if event == "down" then
             timer_forward = add_timeout(INITIAL_DELAY, function()
@@ -54,7 +54,7 @@ local function handle_forward(t)
             end)
         end
     elseif event == "repeat" then
-        mp_command("frame-step")
+        mp_command("frame-step 1 mute")
     elseif event == "up" then
         if timer_forward then timer_forward:kill() end
         timer_forward = nil
