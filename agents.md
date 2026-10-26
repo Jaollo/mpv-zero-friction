@@ -36,12 +36,12 @@ cp scripts/*.lua "$APPDATA/mpv.net/scripts/"
 | File | Lines | Purpose |
 |---|---|---|
 | `mpv.conf` | ~29 | Engine settings, OSC script-opts, OSD suppression |
-| `input.conf` | ~45 | Hardware bindings in 8 sections, right-hand optimized |
+| `input.conf` | ~63 | Hardware bindings in 9 sections, right-hand optimized |
 | `mpvnet.conf` | ~1 | mpv.net host settings (`process-instance=multi`) |
 | `scripts/drag-to-pan.lua` | ~163 | Mouse1 drag panning when `video-zoom > 0` |
 | `scripts/zoom-toward-cursor.lua` | ~70 | Zoom-toward-cursor with pan boundary debounce |
 | `scripts/double-right-quit.lua` | ~37 | Mouse3 single=pause (300ms delay), double=quit |
-| `scripts/mouse-repeat.lua` | ~43 | Side-button key repeat for frame-by-frame scrubbing |
+| `scripts/mouse-repeat.lua` | ~94 | Side-button key repeat for frame-by-frame scrubbing |
 | `scripts/corner-exit.lua` | ~24 | Invisible 90px quit zone in top-right corner |
 | `scripts/osc.lua` | ~3000 | **Heavily modified** stock mpv OSC — ghost mode, `drag-to-pan-event` forwarding, `mouse_in_window` refresh fix, suppressed double-click fullscreen. Grep for `ghostmode` and `drag-to-pan-event` to find custom sections. |
 
