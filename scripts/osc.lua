@@ -186,7 +186,7 @@ local margins_opts = {
 local tick_delay = 1 / 60
 local audio_track_count = 0
 local sub_track_count = 0
-local window_control_box_width = 80
+local window_control_box_width = 225
 local layouts = {}
 local is_december = os.date("*t").month == 12
 local UNICODE_MINUS = string.char(0xe2, 0x88, 0x92)  -- UTF-8 for U+2212 MINUS SIGN
@@ -332,7 +332,7 @@ end
 -- scale factor for translating between real and virtual ASS coordinates
 local function get_virt_scale_factor()
     local w, h = mp.get_osd_size()
-    if w <= 0 or h <= 0 then
+    if not w or not h or w <= 0 or h <= 0 then
         return 0, 0
     end
     return osc_param.playresx / w, osc_param.playresy / h
@@ -349,18 +349,24 @@ end
 local function get_virt_mouse_pos()
     if recently_touched() then
         local sx, sy = get_virt_scale_factor()
-        return state.last_touchX * sx, state.last_touchY * sy
+        if sx > 0 and sy > 0 and state.last_touchX and state.last_touchY then
+            return state.last_touchX * sx, state.last_touchY * sy
+        end
     elseif state.mouse_in_window then
         local sx, sy = get_virt_scale_factor()
         local x, y = mp.get_mouse_pos()
-        return x * sx, y * sy
-    else
-        return -1, -1
+        if sx > 0 and sy > 0 and x and y then
+            return x * sx, y * sy
+        end
     end
+    return -1, -1
 end
 
 local function set_virt_mouse_area(x0, y0, x1, y1, name)
     local sx, sy = get_virt_scale_factor()
+    if sx <= 0 or sy <= 0 then
+        return
+    end
     mp.set_mouse_area(x0 / sx, y0 / sy, x1 / sx, y1 / sy, name)
 end
 
@@ -597,9 +603,13 @@ end
 local function request_init_resize()
     request_init()
     -- ensure immediate update
-    state.tick_timer:kill()
-    state.tick_timer.timeout = 0
-    state.tick_timer:resume()
+    if state.tick_timer == nil then
+        state.tick_timer = mp.add_timeout(0, tick)
+    else
+        state.tick_timer:kill()
+        state.tick_timer.timeout = 0
+        state.tick_timer:resume()
+    end
 end
 
 local function render_wipe()
@@ -1133,13 +1143,14 @@ end
 local function window_controls(topbar)
     local wc_geo = {
         x = 0,
-        y = 30 + user_opts.barmargin,
+        y = 75 + user_opts.barmargin,
         an = 1,
         w = osc_param.playresx,
-        h = 30,
+        h = 75,
     }
 
     local alignment = window_controls_alignment()
+    local btn_w = 75
     local controlbox_w = window_control_box_width
     local titlebox_w = wc_geo.w - controlbox_w
 
@@ -1168,14 +1179,14 @@ local function window_controls(topbar)
     lo.style = osc_styles.wcBar
     lo.alpha = { [1] = 255, [2] = 255, [3] = 255, [4] = 255 } -- FORCE ALL CHANNELS TO 100% TRANSPARENT
 
-    -- INCREASED TOP BUTTON HITBOXES BY 3X (from 25x25 to 75x75)
+    -- TOP BUTTON HITBOXES (3 buttons of 75x75)
     local button_y = wc_geo.y - (wc_geo.h / 2)
     local first_geo =
-        {x = controlbox_left - 20, y = button_y, an = 4, w = 75, h = 75}
+        {x = controlbox_left, y = button_y, an = 4, w = btn_w, h = 75}
     local second_geo =
-        {x = controlbox_left + 55, y = button_y, an = 4, w = 75, h = 75}
+        {x = controlbox_left + btn_w, y = button_y, an = 4, w = btn_w, h = 75}
     local third_geo =
-        {x = controlbox_left + 130, y = button_y, an = 4, w = 75, h = 75}
+        {x = controlbox_left + btn_w * 2, y = button_y, an = 4, w = btn_w, h = 75}
 
     -- Window control buttons use symbols in the custom mpv osd font
     -- because the official unicode codepoints are sufficiently
@@ -2265,6 +2276,17 @@ local function mouse_leave()
     -- reset mouse position
     state.last_mouseX, state.last_mouseY = nil, nil
     state.mouse_in_window = false
+
+    -- Reset active element if mouse left while pressed
+    if state.active_element then
+        local n = state.active_element
+        if element_has_action(elements[n], "reset") then
+            elements[n].eventresponder["reset"](elements[n])
+        end
+        state.active_element = nil
+        state.mouse_down_counter = 0
+    end
+
     -- Cancel any active drag — the OSC's Tier 3 mouse_leave consumes the event
     -- before drag-to-pan's Tier 2 kill switch can fire
     mp.commandv("script-message", "drag-to-pan-event", "cancel")
@@ -2293,7 +2315,7 @@ local function element_has_action(element, action)
         element.eventresponder[action]
 end
 
-local function process_event(source, what)
+local function process_event_internal(source, what)
     local action = string.format("%s%s", source,
         what and ("_" .. what) or "")
 
@@ -2382,6 +2404,13 @@ local function process_event(source, what)
 
     -- ensure rendering after any (mouse) event - icons could change etc
     request_tick()
+end
+
+local function process_event(source, what)
+    local ok, err = pcall(process_event_internal, source, what)
+    if not ok then
+        msg.error("OSC process_event error: " .. tostring(err))
+    end
 end
 
 local function do_enable_keybindings()
@@ -2525,16 +2554,8 @@ local function render()
                 state.windowcontrols_buttons = input_active
             end
 
-            -- Dead-click fallthrough for the invisible top bar control region
             if mouse_hit_coords(cords.x1, cords.y1, cords.x2, cords.y2) then
                 mouse_over_osc = true
-                local mX, mY = get_virt_mouse_pos()
-                -- Only eat the click if it's explicitly hitting the extreme top-right icons
-                -- Close: 1680-1755, Min: 1605-1680, Max: 1530-1605
-                if mX < (wc_geo.w - 225) then
-                    mp.disable_key_bindings("window-controls")
-                    mp.disable_key_bindings("window-controls-title")
-                end
             end
         end
     end
@@ -2555,10 +2576,6 @@ local function render()
 
             if mouse_hit_coords(cords.x1, cords.y1, cords.x2, cords.y2) then
                 mouse_over_osc = true
-                local mX, mY = get_virt_mouse_pos()
-                if mX < (wc_geo.w - 225) then
-                     mp.disable_key_bindings("window-controls-title")
-                end
             end
         end
     end
@@ -2656,8 +2673,11 @@ tick = function()
     elseif state.fullscreen and user_opts.showfullscreen
         or (not state.fullscreen and user_opts.showwindowed) then
 
-        -- render the OSC
-        render()
+        -- render the OSC safely
+        local ok, err = pcall(render)
+        if not ok then
+            msg.error("OSC render error: " .. tostring(err))
+        end
     else
         -- Flush OSD
         render_wipe()
