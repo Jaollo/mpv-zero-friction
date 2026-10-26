@@ -352,7 +352,7 @@ local function get_virt_mouse_pos()
         if sx > 0 and sy > 0 and state.last_touchX and state.last_touchY then
             return state.last_touchX * sx, state.last_touchY * sy
         end
-    elseif state.mouse_in_window then
+    else
         local sx, sy = get_virt_scale_factor()
         local x, y = mp.get_mouse_pos()
         if sx > 0 and sy > 0 and x and y then
@@ -409,6 +409,9 @@ end
 
 local function mouse_hit_coords(bX1, bY1, bX2, bY2)
     local mX, mY = get_virt_mouse_pos()
+    if mX < 0 or mY < 0 or not bX1 or not bY1 or not bX2 or not bY2 then
+        return false
+    end
     return (mX >= bX1 and mX <= bX2 and mY >= bY1 and mY <= bY2)
 end
 
@@ -440,14 +443,22 @@ end
 
 -- translates global (mouse) coordinates to value
 local function get_slider_value_at(element, glob_pos)
+    if not element or not element.slider or not element.slider.min or not element.slider.max then
+        return 0
+    end
+    local min_pos = element.slider.min.glob_pos or 0
+    local max_pos = element.slider.max.glob_pos or 1
+    if max_pos <= min_pos then
+        return element.slider.min.value or 0
+    end
 
     local val = scale_value(
-        element.slider.min.glob_pos, element.slider.max.glob_pos,
-        element.slider.min.value, element.slider.max.value,
-        glob_pos)
+        min_pos, max_pos,
+        element.slider.min.value or 0, element.slider.max.value or 100,
+        glob_pos or 0)
 
     return limit_range(
-        element.slider.min.value, element.slider.max.value,
+        element.slider.min.value or 0, element.slider.max.value or 100,
         val)
 end
 
@@ -1596,9 +1607,46 @@ local function bar_layout(direction, slim)
         padwc_r = window_control_box_width
     end
 
-    if osc_param.display_aspect > 0 and osc_param.playresx < minW then
+    if osc_param.display_aspect and osc_param.display_aspect > 0 and osc_param.playresx < minW then
         osc_param.playresy = minW / osc_param.display_aspect
         osc_param.playresx = osc_param.playresy * osc_param.display_aspect
+    end
+
+    if user_opts.ghostmode and direction < 0 then
+        -- In ghost mode, the entire bottom 224px is an invisible full-width seekbar.
+        -- We do not add invisible playback, audio, subtitle, or volume buttons
+        -- that would steal clicks and create dead zones across the bottom of the screen.
+        osc_geo.x = 0
+        osc_geo.y = math.max(0, osc_param.playresy - osc_geo.h)
+        osc_geo.an = 7
+        osc_geo.w = osc_param.playresx
+
+        osc_param.areas = {}
+        add_area("input", get_hitbox_coords(osc_geo.x, osc_geo.y, osc_geo.an,
+                                            osc_geo.w, osc_geo.h))
+        add_area("showhide", 0, osc_geo.y, osc_param.playresx, osc_param.playresy)
+
+        local geo = { x = 0, y = osc_geo.y, an = osc_geo.an,
+                      w = osc_geo.w, h = osc_geo.h }
+
+        new_element("bgbar1", "box")
+        local lo = add_layout("bgbar1")
+        lo.geometry = geo
+        lo.layer = 15
+        lo.style = osc_styles.seekbarBar
+        lo.alpha = { [1] = 255, [2] = 255, [3] = 255, [4] = 255 }
+
+        lo = add_layout("seekbar")
+        lo.geometry = geo
+        lo.style = osc_styles.seekbarBar
+        lo.alpha = { [1] = 255, [2] = 255, [3] = 255, [4] = 255 }
+        lo.slider.border = 0
+        lo.slider.gap = 0
+        lo.slider.tooltip_style = osc_styles.timePosBar
+        lo.slider.tooltip_an = 5
+        lo.slider.stype = user_opts["seekbarstyle"]
+        lo.slider.rtype = user_opts["seekrangestyle"]
+        return
     end
 
     osc_geo.y = direction * (osc_geo.h - 2 + user_opts.barmargin)
@@ -1845,13 +1893,16 @@ local function osc_init()
     -- set canvas resolution according to display aspect and scaling setting
     local baseResY = 720
     local _, display_h, display_aspect = mp.get_osd_size()
-    local scale
+    display_h = (display_h and display_h > 0) and display_h or 720
+    display_aspect = (display_aspect and display_aspect > 0) and display_aspect or (16 / 9)
 
+    local scale
     if state.fullscreen then
         scale = user_opts.scalefullscreen
     else
         scale = user_opts.scalewindowed
     end
+    scale = (scale and scale > 0) and scale or 1.0
 
     local scale_with_video
     if user_opts.vidscale == "auto" then
@@ -1865,10 +1916,8 @@ local function osc_init()
     else
         osc_param.unscaled_y = display_h
     end
-    osc_param.playresy = osc_param.unscaled_y / scale
-    if display_aspect > 0 then
-        osc_param.display_aspect = display_aspect
-    end
+    osc_param.playresy = math.max(1, osc_param.unscaled_y / scale)
+    osc_param.display_aspect = display_aspect
     osc_param.playresx = osc_param.playresy * osc_param.display_aspect
 
     -- stop seeking with the slider to prevent skipping files
@@ -2082,6 +2131,9 @@ local function osc_init()
         mp.commandv("seek", get_slider_value(element), "absolute-percent+exact")
     end
     ne.eventresponder["mbtn_left_up"] = function (element)
+        element.state.mbtn_left = false
+    end
+    ne.eventresponder["reset"] = function (element)
         element.state.mbtn_left = false
     end
     ne.eventresponder["mbtn_right_up"] = function (element)
@@ -2360,9 +2412,7 @@ local function process_event_internal(source, what)
 
             if n == 0 then --luacheck: ignore 542
                 --click on background (does not work)
-            elseif element_has_action(elements[n], action) and
-                mouse_hit(elements[n]) then
-
+            elseif element_has_action(elements[n], action) then
                 elements[n].eventresponder[action](elements[n])
             end
 
@@ -2447,6 +2497,7 @@ local function render()
     if state.screen_sizeX ~= current_screen_sizeX
         or state.screen_sizeY ~= current_screen_sizeY then
 
+        state.active_element = nil
         request_init_resize()
 
         state.screen_sizeX = current_screen_sizeX
@@ -2462,8 +2513,12 @@ local function render()
         -- between mouse-down and mouse-up (using the index active_element).
         request_tick()
     elseif state.initREQ then
-        osc_init()
-        state.initREQ = false
+        local ok, err = pcall(osc_init)
+        if ok then
+            state.initREQ = false
+        else
+            msg.error("osc_init error: " .. tostring(err))
+        end
 
         -- store initial mouse position
         if (state.last_mouseX == nil or state.last_mouseY == nil)

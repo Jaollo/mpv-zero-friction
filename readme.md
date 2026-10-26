@@ -1,4 +1,4 @@
-# Zero-Friction v0.9.3
+# Zero-Friction v0.9.4
 
 Drag to move, scroll to volume, click to seek — no menus, no toolbar, no second hand needed.
 

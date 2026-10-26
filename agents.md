@@ -101,13 +101,11 @@ All via `mp.commandv("script-message", "drag-to-pan-event", event)`.
 
 ## Resolved Issue: Ghost Seekbar and Top Bar Desync / Crash
 
-Previously, rapid window resizes or mouse interaction near the top bar caused the seekbar and top bar to freeze permanently until mpv was restarted. The root causes were:
-1. `get_virt_mouse_pos()` performed `x * sx` without checking if `x` was nil, which threw a fatal arithmetic error when mouse position was queryable as nil during resizes or when the cursor left the window.
-2. In `render()`, an out-of-scope reference `wc_geo.w` was indexed when cursor hovered near the top bar, throwing `attempt to index global 'wc_geo' (a nil value)`.
-3. Zero-size OSD dimensions during resize/minimization caused division by zero in `set_virt_mouse_area()`.
-4. `mouse_leave()` did not reset `state.active_element`, locking the init pipeline.
-
-All paths now defensively check nil/zero values, geometry coordinates are properly aligned, and `render()` and `process_event()` are wrapped in `pcall` guards so errors cannot kill `osc.lua`.
+Previously, window resizes, moves, or mouse interactions could cause the invisible seekbar and top bar to freeze or fail to register clicks until restart. The root causes and final resolutions:
+1. **Ghost seekbar dead zones**: In ghost mode, the layout originally created invisible buttons (`play_pause`, `tc_left`, `tc_right`, `volume`, `fullscreen`, etc.) that occupied the leftmost ~25% and rightmost ~30% of the bottom bar. Clicking there hit invisible buttons or dead zones instead of seeking, which triggered window drag. In ghost mode, the seekbar now spans 100% of the width (`0` to `osc_param.playresx`) across the bottom 224px with all unused invisible buttons removed.
+2. **Stale mouse_in_window tracking**: Window drag and external hooks desynced the internal `state.mouse_in_window` flag, causing `get_virt_mouse_pos()` to return `-1, -1` and drop clicks. `get_virt_mouse_pos()` now directly uses valid `mp.get_mouse_pos()` coordinates whenever present.
+3. **Init pipeline stall**: `render()` deferred `osc_init()` whenever `state.active_element` was non-nil. Releasing clicks outside element hitboxes bypassed `mbtn_left_up`, leaving `active_element` stuck. Screen size changes now reset `state.active_element`, `osc_init()` is wrapped in `pcall`, and `seekbar` includes a `reset` responder.
+4. **Dimension safety**: `display_h`, `display_aspect`, and `scale` in `osc_init()` are sanitized against `nil` and `<= 0` to prevent `inf`/`nan` arithmetic errors in hitbox scaling. Mouse releases (`up`) are now unconditionally delivered to `active_element`.
 
 ## Resolved Issue: Mouse4 & Mouse5 Side Buttons
 
