@@ -10,6 +10,11 @@ local add_periodic_timer = mp.add_periodic_timer
 local timer_back = nil
 local timer_forward = nil
 
+-- Tuning constants for hold-to-repeat scrubbing
+local INITIAL_DELAY    = 0.25  -- 250ms initial delay before repeating starts
+local BACK_INTERVAL    = 0.12  -- 120ms interval (~8.3 frames/sec)
+local FORWARD_INTERVAL = 0.12  -- 120ms interval (slowed down from 50ms for controlled precision)
+
 local function repeat_back()
     mp_command("frame-back-step")
 end
@@ -25,9 +30,8 @@ local function handle_back(t)
         mp_command("frame-back-step")
         if timer_back then timer_back:kill() end
         if event == "down" then
-            -- 200ms initial delay, then 120ms interval (frame-back-step needs time to decode)
-            timer_back = add_timeout(0.2, function()
-                timer_back = add_periodic_timer(0.12, repeat_back)
+            timer_back = add_timeout(INITIAL_DELAY, function()
+                timer_back = add_periodic_timer(BACK_INTERVAL, repeat_back)
             end)
         end
     elseif event == "repeat" then
@@ -45,9 +49,8 @@ local function handle_forward(t)
         mp_command("frame-step")
         if timer_forward then timer_forward:kill() end
         if event == "down" then
-            -- 200ms initial delay, then 50ms interval for smooth forward stepping
-            timer_forward = add_timeout(0.2, function()
-                timer_forward = add_periodic_timer(0.05, repeat_forward)
+            timer_forward = add_timeout(INITIAL_DELAY, function()
+                timer_forward = add_periodic_timer(FORWARD_INTERVAL, repeat_forward)
             end)
         end
     elseif event == "repeat" then
