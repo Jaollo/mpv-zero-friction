@@ -11,3 +11,6 @@ Locale/
 
 # Claude Code
 .claude/
+
+# Temporary scratch directory
+scratch/

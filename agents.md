@@ -23,6 +23,14 @@ cp mpv.conf input.conf mpvnet.conf "$APPDATA/mpv.net/"
 cp scripts/*.lua "$APPDATA/mpv.net/scripts/"
 ```
 
+## Versioning Policy
+
+- Future version bumps follow semantic patch versions: the bump after `v0.9` is `v0.9.1`, followed by `v0.9.2`, `v0.9.3`, etc.
+- When performing a version bump:
+  1. Update version headers in `readme.md` and `input.conf`.
+  2. Deploy updated files to `%AppData%\mpv.net\`.
+  3. Commit and push to git with all markdown documentation remaining strictly lowercase (`readme.md`, `agents.md`).
+
 ## File Inventory
 
 | File | Lines | Purpose |
@@ -100,6 +108,12 @@ Previously, rapid window resizes or mouse interaction near the top bar caused th
 4. `mouse_leave()` did not reset `state.active_element`, locking the init pipeline.
 
 All paths now defensively check nil/zero values, geometry coordinates are properly aligned, and `render()` and `process_event()` are wrapped in `pcall` guards so errors cannot kill `osc.lua`.
+
+## Resolved Issue: Mouse4 & Mouse5 Side Buttons
+
+Previously, Mouse4 and Mouse5 side buttons did not work reliably or failed to register. The causes were:
+1. `scripts/mouse-repeat.lua` had a strict guard `if not t or not t.event then return end`. When triggered via non-complex pathways, direct commands, or fallback invocations where `t` was nil or lacked `event`, the action was silently dropped. `handle_back` and `handle_forward` now safely fallback to `event = "press"` when `t.event` is absent.
+2. Incomplete key alias coverage: depending on mouse software (Logitech G Hub, Razer, SteelSeries) or Windows driver configurations, side buttons could be emitted as `MBTN_BACK`/`MBTN_FORWARD`, `MOUSE_BTN7`/`MOUSE_BTN8`, `MOUSE_BTN5`/`MOUSE_BTN6`, `GO_BACK`/`GO_FORWARD`, `XF86_BACK`/`XF86_FORWARD`, `Prev`/`Next`, or `Alt+LEFT`/`Alt+RIGHT`. Full coverage is now bound in `input.conf` and registered in `mouse-repeat.lua`.
 
 ## Coding Conventions
 
